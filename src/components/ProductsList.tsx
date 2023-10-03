@@ -37,31 +37,57 @@ const retryApiCall = async (
   }
 };
 
-export const ProductsList = () => {
+/**
+ * Custom hook to fetch products data
+ * @returns {data, loading, error}
+ */
+function useProducts() {
   const [data, setData] = useState<Product[] | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
 
   useEffect(() => {
-    setLoading(true);
-    // timeout to simulate delay
-    setTimeout(() => {
-      retryApiCall("https://dummyjson.com/products", 2)
-        .then((data: ProductsApiResponseData) => {
-          setData(data.products);
-          setLoading(false);
-        })
-        .catch((error: Error) => setError(error))
-        .finally(() => setLoading(false));
-    }, 1000);
+    refresh();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  const refresh = () => {
+    setLoading(true);
+    setError(undefined);
+    retryApiCall("https://dummyjson.com/products", 2)
+      .then((data: ProductsApiResponseData) => {
+        setData(data.products);
+        setLoading(false);
+      })
+      .catch((error: Error) => setError(error))
+      .finally(() => setLoading(false));
+  };
+
+  return { data, loading, error, refresh };
+}
+
+export const ProductsList = () => {
+  const { data, loading, error, refresh } = useProducts();
+
+  if (loading)
+    return (
+      <div className={"border border-gray-200 p-3 rounded-md"}>
+        <div>Loading...</div>
+      </div>
+    );
   if (error)
-    return <div className="text-red-400">Error: Something went wrong.</div>;
+    return (
+      <div className={"border border-gray-200 p-3 rounded-md"}>
+        <div className="text-red-400">Error: Something went wrong.</div>
+        <p>
+          <button className="p-3 py-1 rounded-md bg-gray-200" onClick={refresh}>
+            Retry
+          </button>
+        </p>
+      </div>
+    );
 
   return (
-    <div>
+    <div className={"border border-gray-200 p-3 rounded-md"}>
       <h2 className="font-bold mb-3">Products:</h2>
       <div>
         {React.Children.toArray(
