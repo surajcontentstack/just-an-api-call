@@ -19,6 +19,21 @@ type ProductsApiResponseData = {
 };
 
 /**
+ * API URL
+ */
+const API_URL = "https://dummyjson.com/products";
+
+/**
+ * Global data store
+ */
+const GLOBAL_DATA: {
+  [url: string]: {
+    state: "NOT_FETCHED" | "FETCHING" | "COMPLETE";
+    data?: ProductsApiResponseData;
+  };
+} = {};
+
+/**
  * Retry API call if it fails based on number of retry attempts
  * @param url
  * @param retryAttempt
@@ -29,7 +44,7 @@ const retryApiCall = async (
 ): Promise<ProductsApiResponseData> => {
   try {
     const response = await fetch(url);
-    const data = await response.json();
+    const data = (await response.json()) as ProductsApiResponseData;
     return data as ProductsApiResponseData;
   } catch (error) {
     if (retryAttempt === 0) {
@@ -41,7 +56,7 @@ const retryApiCall = async (
 
 /**
  * Custom hook to fetch products data
- * @returns {data, loading, error}
+ * @returns {data, loading, error, refresh}
  */
 function useProducts(brand: string) {
   const [data, setData] = useState<Product[] | undefined>();
@@ -53,14 +68,30 @@ function useProducts(brand: string) {
   }, []);
 
   const refresh = () => {
+    if (GLOBAL_DATA[API_URL]?.state === "COMPLETE") {
+      setData(filter(GLOBAL_DATA[API_URL].data?.products, { brand }));
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
+    if (GLOBAL_DATA[API_URL]?.state === "FETCHING") {
+      setTimeout(() => refresh(), 1000);
+      return;
+    }
+    GLOBAL_DATA[API_URL] = { state: "FETCHING", data: undefined };
     setLoading(true);
     setError(undefined);
-    retryApiCall("https://dummyjson.com/products", 2)
+    retryApiCall(API_URL, 2)
       .then((data: ProductsApiResponseData) => {
+        GLOBAL_DATA[API_URL] = { state: "COMPLETE", data };
         setData(filter(data.products, { brand }));
         setLoading(false);
       })
-      .catch((error: Error) => setError(error))
+      .catch((error: Error) => {
+        GLOBAL_DATA[API_URL] = { state: "NOT_FETCHED", data: undefined };
+        setError(error);
+      })
       .finally(() => setLoading(false));
   };
 
