@@ -16,14 +16,22 @@ type ProductsApiResponseData = {
 
 export const ProductsList = () => {
   const [data, setData] = useState<Product[] | undefined>();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("https://dummyjson.com/products")
-      .then((response) => response.json())
-      .then((data: ProductsApiResponseData) =>
-        setData(data.products as Product[]),
-      );
+    setLoading(true);
+    // timeout to simulate delay
+    setTimeout(() => {
+      fetch("https://dummyjson.com/products")
+        .then((response) => response.json())
+        .then((data: ProductsApiResponseData) => {
+          setData(data.products as Product[]);
+          setLoading(false);
+        });
+    }, 2000);
   }, []);
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div>
