@@ -17,21 +17,26 @@ type ProductsApiResponseData = {
 export const ProductsList = () => {
   const [data, setData] = useState<Product[] | undefined>();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
 
   useEffect(() => {
     setLoading(true);
     // timeout to simulate delay
     setTimeout(() => {
-      fetch("https://dummyjson.com/products")
+      fetch("https://dummyjson.com/productss")
         .then((response) => response.json())
         .then((data: ProductsApiResponseData) => {
           setData(data.products as Product[]);
           setLoading(false);
-        });
+        })
+        .catch((error) => setError(error))
+        .finally(() => setLoading(false));
     }, 2000);
   }, []);
 
   if (loading) return <div>Loading...</div>;
+  if (error)
+    return <div className="text-red-400">Error: Something went wrong.</div>;
 
   return (
     <div>
