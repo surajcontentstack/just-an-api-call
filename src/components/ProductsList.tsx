@@ -12,6 +12,29 @@ type Product = {
 type ProductsApiResponseData = {
   products: Product[];
   limit: number;
+  skip: number;
+  total: number;
+};
+
+/**
+ * Retry API call if it fails based on number of retry attempts
+ * @param url
+ * @param retryAttempt
+ */
+const retryApiCall = async (
+  url: string,
+  retryAttempt = 2,
+): Promise<ProductsApiResponseData> => {
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    return data as ProductsApiResponseData;
+  } catch (error) {
+    if (retryAttempt === 0) {
+      throw new Error((error as Error).message);
+    }
+    return retryApiCall(url, retryAttempt - 1);
+  }
 };
 
 export const ProductsList = () => {
@@ -23,15 +46,14 @@ export const ProductsList = () => {
     setLoading(true);
     // timeout to simulate delay
     setTimeout(() => {
-      fetch("https://dummyjson.com/productss")
-        .then((response) => response.json())
+      retryApiCall("https://dummyjson.com/products", 2)
         .then((data: ProductsApiResponseData) => {
-          setData(data.products as Product[]);
+          setData(data.products);
           setLoading(false);
         })
-        .catch((error) => setError(error))
+        .catch((error: Error) => setError(error))
         .finally(() => setLoading(false));
-    }, 2000);
+    }, 1000);
   }, []);
 
   if (loading) return <div>Loading...</div>;
