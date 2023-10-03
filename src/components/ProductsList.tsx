@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { filter } from "lodash";
 
 type Product = {
+  brand: string;
   id: number;
   title: string;
   thumbnail: string;
@@ -41,7 +43,7 @@ const retryApiCall = async (
  * Custom hook to fetch products data
  * @returns {data, loading, error}
  */
-function useProducts() {
+function useProducts(brand: string) {
   const [data, setData] = useState<Product[] | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
@@ -55,7 +57,7 @@ function useProducts() {
     setError(undefined);
     retryApiCall("https://dummyjson.com/products", 2)
       .then((data: ProductsApiResponseData) => {
-        setData(data.products);
+        setData(filter(data.products, { brand }));
         setLoading(false);
       })
       .catch((error: Error) => setError(error))
@@ -65,8 +67,8 @@ function useProducts() {
   return { data, loading, error, refresh };
 }
 
-export const ProductsList = () => {
-  const { data, loading, error, refresh } = useProducts();
+export const ProductsList = ({ brand }: { brand: string }) => {
+  const { data, loading, error, refresh } = useProducts(brand);
 
   if (loading)
     return (
@@ -88,7 +90,7 @@ export const ProductsList = () => {
 
   return (
     <div className={"border border-gray-200 p-3 rounded-md"}>
-      <h2 className="font-bold mb-3">Products:</h2>
+      <h2 className="font-bold mb-3">{brand} Products:</h2>
       <div>
         {React.Children.toArray(
           data?.map((item: Product) => (
